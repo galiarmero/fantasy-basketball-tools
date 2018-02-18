@@ -16,8 +16,8 @@ Collection of scripts for fantasy basketball team analysis.
     pyenv/Scripts/activate
     pip install -r requirements.txt
     ```
-3. Download [ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) zip file and extract it to your local machine (e.g. `C:/webdrivers`).
-4. Set `PATH` environment variable to the `/bin` directory of chromedriver (e.g. `C:/webdrivers`)
+3. Download [ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) zip file and extract it to your local machine.
+4. Set `PATH` environment variable with the directory containing chromedriver.
 
 
 ## Shout-outs

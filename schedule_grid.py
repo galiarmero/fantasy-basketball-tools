@@ -1,32 +1,27 @@
 import os
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException
 
+from config import headless_chrome_options
+
 SCHEDULE_URL = "https://basketballmonster.com/ScheduleGrid.aspx"
 
 class ScheduleGrid(object):
     def __init__(self):
-        self._browser = webdriver.Chrome(chrome_options=self._get_driver_options())
+        self._browser = webdriver.Chrome(chrome_options=headless_chrome_options)
         self._load_schedule()
-
-    def _get_driver_options(self):
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        return options
 
     def get_team_games_per_week(self, weeks):
         return { self._extract_week_num(tr): self._generate_games_per_team_map(tr) 
-                    for tr in self._sched_soup.find_all("tr", class_=self._is_data_row) 
+                    for tr in self._soup.find_all("tr", class_=self._is_data_row) 
                     if self._extract_week_num(tr) in weeks }
     
     def _extract_teams(self):
-        return [ t.text for t in self._sched_soup.select("tbody > tr:nth-of-type(4) > td")[4:] ]
+        return [ t.text for t in self._soup.select("tbody > tr:nth-of-type(4) > td")[4:] ]
     
     def _extract_week_num(self, tr):
         return int(tr.find_all("td")[2].text)
@@ -44,7 +39,7 @@ class ScheduleGrid(object):
                 expect.presence_of_element_located((By.XPATH, "//*[@id='form1']/div[@class='content-div']/table"))
             )
 
-            self._sched_soup = BeautifulSoup(table.get_attribute("innerHTML"), "html.parser")
+            self._soup = BeautifulSoup(table.get_attribute("innerHTML"), "html.parser")
         except TimeoutException:
             print("Unable to find the expected table.")
 
