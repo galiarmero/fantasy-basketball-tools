@@ -4,14 +4,13 @@ from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 class YahooAuth(object):
-    def __init__(self, driver, target_url="https://www.yahoo.com"):
+    def __init__(self, driver):
         self._driver = driver
-        self._target_url = target_url
         self._wait = WebDriverWait(self._driver, 10)
 
-    def login(self, username, password):
+    def login(self, username, password, target_url="https://www.yahoo.com"):
         try:
-            self._driver.get(self._target_url)
+            self._target_url = target_url
             self._go_to_sign_in()
             self._enter_username(username)
             self._enter_password(password)
@@ -21,11 +20,7 @@ class YahooAuth(object):
             exit(1)
     
     def _go_to_sign_in(self):
-        sign_in = self._wait.until(
-            expect.element_to_be_clickable(
-                (By.XPATH, "//*[@id='yucs-profile']/a[@role='button']/b[.='Sign in']"))
-        )
-        sign_in.click()
+        self._driver.get(self._target_url)
         self._wait.until(expect.url_contains("/config/login"))
         print("Attempting login.")
 
