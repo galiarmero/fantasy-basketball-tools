@@ -1,18 +1,15 @@
 import os
 from bs4 import BeautifulSoup
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException
 
-from config import headless_chrome_options
-
 SCHEDULE_URL = "https://basketballmonster.com/ScheduleGrid.aspx"
 
 class ScheduleGrid(object):
-    def __init__(self):
-        self._browser = webdriver.Chrome(chrome_options=headless_chrome_options)
+    def __init__(self, driver):
+        self._driver = driver
         self._load_schedule()
 
     def get_team_games_per_week(self, weeks):
@@ -34,8 +31,8 @@ class ScheduleGrid(object):
 
     def _load_schedule(self):
         try:
-            self._browser.get(SCHEDULE_URL)
-            table = WebDriverWait(self._browser, 10).until(
+            self._driver.get(SCHEDULE_URL)
+            table = WebDriverWait(self._driver, 10).until(
                 expect.presence_of_element_located((By.XPATH, "//*[@id='form1']/div[@class='content-div']/table"))
             )
 
