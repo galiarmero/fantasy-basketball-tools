@@ -19,6 +19,7 @@ class YahooAuth(object):
             print("Page redirected to is different from expected.")
             exit(1)
     
+
     def _go_to_sign_in(self):
         self._driver.get(self._target_url)
         self._wait.until(expect.url_contains("/config/login"))
@@ -49,7 +50,9 @@ class YahooAuth(object):
                 exit(1)
             except NoSuchElementException:
                 print("An error occurred after entering username.")
-    
+                exit(1)
+
+
     def _enter_password(self, password):
         password_input = self._wait.until(
             expect.presence_of_element_located(
@@ -75,5 +78,6 @@ class YahooAuth(object):
             except NoSuchElementException:
                 print("An error occurred after entering password.")
     
+
     def _url_starts_with_target(self, driver):
         return driver.current_url.startswith(self._target_url)
