@@ -41,6 +41,7 @@ class YahooNbaFantasy(object):
 
         return teams_info
 
+    
     def _get_roster(self, active=False):
         roster_rows_xpath = "//table[@id='statTable0']/tbody/tr" \
                             "[not(contains(concat(' ', @class, ' '), ' empty-bench '))]"
@@ -53,24 +54,29 @@ class YahooNbaFantasy(object):
                 continue
             
             player = self._get_player_info(roster_row)
-            player['roster_position'] = roster_position
-            roster.append(player)
+            if player:
+                player['roster_position'] = roster_position
+                roster.append(player)
 
         return roster
 
     def _get_player_info(self, roster_row):
-        player_info_element = roster_row.find_element_by_class_name(PLAYER_NAME_CLASS)
+        try:
+            player_info_element = roster_row.find_element_by_class_name(PLAYER_NAME_CLASS)
 
-        player_name_element = player_info_element.find_element_by_tag_name("a")
-        href = player_name_element.get_attribute("href")
-        name = player_name_element.text
+            player_name_element = player_info_element.find_element_by_tag_name("a")
+            href = player_name_element.get_attribute("href")
+            name = player_name_element.text
 
-        team_pos = player_info_element.find_element_by_tag_name("span").text.split(' - ')
-        team = team_pos[0].upper()
-        eligible_positions = team_pos[1].split(',')
+            team_pos = player_info_element.find_element_by_tag_name("span").text.split(' - ')
+            team = team_pos[0].upper()
+            eligible_positions = team_pos[1].split(',')
 
-        return { 'name' : name, 'href' : href, 'team' : team, \
-                'eligible_positions' : eligible_positions }
+            return { 'name' : name, 'href' : href, 'team' : team, \
+                    'eligible_positions' : eligible_positions }
+        except NoSuchElementException:
+            print("Player info not found")
+            return None
 
 
     def _get_teams_info(self, team_rows):

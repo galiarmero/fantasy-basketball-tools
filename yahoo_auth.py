@@ -80,4 +80,4 @@ class YahooAuth(object):
     
 
     def _url_starts_with_target(self, driver):
-        return driver.current_url.startswith(self._target_url)
+        return driver.current_url and driver.current_url.startswith(self._target_url)
