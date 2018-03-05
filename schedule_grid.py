@@ -10,6 +10,7 @@ SCHEDULE_URL = "https://basketballmonster.com/ScheduleGrid.aspx"
 class ScheduleGrid(object):
     def __init__(self, driver):
         self._driver = driver
+        self._yahoo_team_names = { "GSW" : "GS", "NOR" : "NO", "NYK" : "NY", "SAS" : "SA" }
         self._load_schedule()
 
     def get_team_games_per_week(self, weeks):
@@ -18,7 +19,8 @@ class ScheduleGrid(object):
                     if self._extract_week_num(tr) in weeks }
     
     def _extract_teams(self):
-        return [ t.text for t in self._soup.select("tbody > tr:nth-of-type(4) > td")[4:] ]
+        return [ self._get_yahoo_team_names(t.text) \
+                    for t in self._soup.select("tbody > tr:nth-of-type(4) > td")[4:] ]
     
     def _extract_week_num(self, tr):
         return int(tr.find_all("td")[2].text)
@@ -28,6 +30,12 @@ class ScheduleGrid(object):
 
     def _is_data_row(self, classname):
         return classname == None or classname == "scheduleGridTR"
+    
+    def _get_yahoo_team_names(self, team):
+        try:
+            return self._yahoo_team_names[team]
+        except KeyError:
+            return team
 
     def _load_schedule(self):
         try:
