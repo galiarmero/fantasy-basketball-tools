@@ -8,7 +8,7 @@ from yahoo_nba_fantasy import YahooNbaFantasy
 from config import headless_chrome_options, YAHOO_FANTASY_URL
 from timer import timer
 
-class PlayoffGamesCounter(object):
+class WeeklyTeamGamesCounter(object):
     def __init__(self):
         self._driver = webdriver.Chrome(chrome_options=headless_chrome_options)
         self._sched = ScheduleGrid(self._driver)
@@ -71,5 +71,5 @@ class PlayoffGamesCounter(object):
 if __name__ == "__main__":
     username = input("Enter Yahoo username/email: ")
     password = getpass.getpass(prompt="Enter Yahoo password: ")
-    games_counter = PlayoffGamesCounter()
+    games_counter = WeeklyTeamGamesCounter()
     games_counter.main(username, password, 10156, [22, 23, 24])
