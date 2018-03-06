@@ -14,7 +14,7 @@ POS_LABEL_CLASS = "pos-label"
 PLAYER_NAME_CLASS = "ysf-player-name"
 
 
-class YahooNbaFantasy(object):
+class RosterRepository(object):
     def __init__(self, driver):
         self._driver = driver
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)

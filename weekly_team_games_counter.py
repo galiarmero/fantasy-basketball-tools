@@ -4,7 +4,7 @@ import json
 
 from schedule_grid import ScheduleGrid
 from yahoo_auth import YahooAuth
-from yahoo_nba_fantasy import YahooNbaFantasy
+from roster_repository import RosterRepository
 from config import headless_chrome_options, YAHOO_FANTASY_URL
 from timer import timer
 
@@ -13,7 +13,7 @@ class WeeklyTeamGamesCounter(object):
         self._driver = webdriver.Chrome(chrome_options=headless_chrome_options)
         self._sched = ScheduleGrid(self._driver)
         self._yahoo_auth = YahooAuth(self._driver)
-        self._yahoo_nba_fantasy = YahooNbaFantasy(self._driver)
+        self._yahoo_nba_fantasy = RosterRepository(self._driver)
     
     @timer
     def main(self, username, password, league_id, weeks):
