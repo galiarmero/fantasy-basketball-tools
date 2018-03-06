@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from bs4 import BeautifulSoup
 import re
 import sys
 
@@ -21,8 +22,7 @@ class RosterRepository(object):
 
     def get_active_rosters(self, league_id):
         self._assert_current_page_matches_league()
-        team_rows = self._driver.find_elements_by_xpath("//*[@id='standingstable']/tbody/tr")
-        teams_info = self._get_teams_info(team_rows)
+        teams_info = self._get_teams_info()
 
         for team in teams_info:
             print("Generating roster for team {}".format(team.get("name")))
@@ -79,18 +79,22 @@ class RosterRepository(object):
             return None
 
 
-    def _get_teams_info(self, team_rows):
+    def _get_teams_info(self):
+        standings = self._driver.find_element_by_id("standingstable").get_attribute('innerHTML')
+        standings_soup = BeautifulSoup(standings, 'html.parser')
+        team_rows = standings_soup.find('tbody').find_all('tr')
+        
         print("Generating teams' information")
         teams_info = []
 
         for team_row in team_rows:
-            id = int(team_row.get_attribute("data-target").split('/')[-1])
+            id = int(team_row['data-target'].split('/')[-1])
 
-            team_name_element = team_row.find_element_by_class_name(TEAM_NAME_CLASS)
+            team_name_element = team_row.find(class_=TEAM_NAME_CLASS)
             name = team_name_element.text
-            href = team_name_element.get_attribute("href")
+            href = YAHOO_FANTASY_URL + team_name_element['href']
 
-            record = team_row.find_element_by_class_name(WIN_LOSS_DRAW_CLASS).text.split('-')
+            record = team_row.find(class_=WIN_LOSS_DRAW_CLASS).text.split('-')
             wins = int(record[0])
             losses = int(record[1])
             draws = int(record[2])
