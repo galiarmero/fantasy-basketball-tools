@@ -7,6 +7,7 @@ import re
 import sys
 
 from config import YAHOO_FANTASY_URL
+from timer import timer
 
 
 TEAM_NAME_CLASS = "Mawpx-250"
@@ -41,42 +42,42 @@ class RosterRepository(object):
 
         return teams_info
 
-    
+    @timer
     def _get_roster(self, active=False):
-        roster_rows_xpath = "//table[@id='statTable0']/tbody/tr" \
-                            "[not(contains(concat(' ', @class, ' '), ' empty-bench '))]"
-        roster_rows = self._driver.find_elements_by_xpath(roster_rows_xpath)
+        stats_table = self._driver.find_element_by_id('statTable0').get_attribute('innerHTML')
+        stats_soup = BeautifulSoup(stats_table, 'html.parser')
+        roster_rows = [ tr for tr in stats_soup.find('tbody').find_all('tr') \
+                            if 'empty-bench' not in tr['class'] ]
+        
         roster = []
-        for roster_row in roster_rows:
-            roster_position = roster_row.find_element_by_class_name(POS_LABEL_CLASS) \
-                                        .get_attribute("data-pos")
+        for player_row in roster_rows:
+            roster_position = player_row.find(class_=POS_LABEL_CLASS)['data-pos']
             if active and roster_position == 'IL':
                 continue
             
-            player = self._get_player_info(roster_row)
+            player = self._get_player_info(player_row)
             if player:
                 player['roster_position'] = roster_position
                 roster.append(player)
 
         return roster
 
-    def _get_player_info(self, roster_row):
-        try:
-            player_info_element = roster_row.find_element_by_class_name(PLAYER_NAME_CLASS)
+    def _get_player_info(self, player_row):
+        player_info_element = player_row.find(class_=PLAYER_NAME_CLASS)
 
-            player_name_element = player_info_element.find_element_by_tag_name("a")
-            href = player_name_element.get_attribute("href")
-            name = player_name_element.text
-
-            team_pos = player_info_element.find_element_by_tag_name("span").text.split(' - ')
-            team = team_pos[0].upper()
-            eligible_positions = team_pos[1].split(',')
-
-            return { 'name' : name, 'href' : href, 'team' : team, \
-                    'eligible_positions' : eligible_positions }
-        except NoSuchElementException:
-            print("Player info not found")
+        player_name_element = player_info_element.find("a")
+        if not player_name_element:
             return None
+
+        href = player_name_element['href']
+        name = player_name_element.text
+
+        team_pos = player_info_element.find("span").text.split(' - ')
+        team = team_pos[0].upper()
+        eligible_positions = team_pos[1].split(',')
+
+        return { 'name' : name, 'href' : href, 'team' : team, \
+                'eligible_positions' : eligible_positions }
 
 
     def _get_teams_info(self):
