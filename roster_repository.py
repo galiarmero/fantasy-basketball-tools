@@ -25,16 +25,16 @@ class RosterRepository(object):
         teams_info = self._get_teams_info()
 
         for team in teams_info:
-            print("Generating roster for team {}".format(team.get("name")))
+            print("Generating roster for team {}".format(team['name']))
 
-            href = team.get("href")
+            href = team['href']
             self._driver.get(href)
 
             try:
                 self._wait.until(expect.url_contains(href))
             except TimeoutException:
                 print("Roster page for team {} is either invalid " \
-                        "or taking long to load".format(team.get("name")))
+                        "or taking long to load".format(team['name']))
                 sys.exit()
 
             team['roster'] = self._get_roster(True)
