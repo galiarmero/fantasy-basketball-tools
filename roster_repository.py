@@ -7,7 +7,6 @@ import re
 import sys
 
 from config import YAHOO_FANTASY_URL
-from timer import timer
 
 
 TEAM_NAME_CLASS = "Mawpx-250"
@@ -42,7 +41,6 @@ class RosterRepository(object):
 
         return teams_info
 
-    @timer
     def _get_roster(self, active=False):
         stats_table = self._driver.find_element_by_id('statTable0').get_attribute('innerHTML')
         stats_soup = BeautifulSoup(stats_table, 'html.parser')

@@ -7,7 +7,7 @@ from selenium.common.exceptions import TimeoutException
 
 SCHEDULE_URL = "https://basketballmonster.com/ScheduleGrid.aspx"
 
-class ScheduleGrid(object):
+class ScheduleScraper(object):
     def __init__(self, driver):
         self._driver = driver
         self._yahoo_team_names = { "GSW" : "GS", "NOR" : "NO", "NYK" : "NY", "SAS" : "SA" }
