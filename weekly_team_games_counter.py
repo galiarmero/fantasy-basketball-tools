@@ -3,25 +3,25 @@ import getpass
 import json
 import os
 
-from utils.scripts.schedule_scraper import ScheduleScraper
+from schedule_repository import ScheduleRepository
 from yahoo_auth import YahooAuth
 from roster_repository import RosterRepository
 from config import headless_chrome_options, YAHOO_FANTASY_URL
+from utils.timer import timer
 
 class WeeklyTeamGamesCounter(object):
     def __init__(self):
         self._driver = webdriver.Chrome(chrome_options=headless_chrome_options)
-        self._sched = ScheduleScraper()
+        self._schedule = ScheduleRepository()
         self._yahoo_auth = YahooAuth(self._driver)
         self._yahoo_nba_fantasy = RosterRepository(self._driver)
     
-    def main(self, username, password, league_id, weeks):
-        # TODO: Write schedule_repository and get weekly_games_per_team with weeks as argument
-        weekly_games_per_team = self._sched.get_team_games_per_week()
 
+    @timer
+    def main(self, username, password, league_id, weeks):
+        weekly_games_per_team = self._schedule.get_weekly_game_count_per_team(weeks)
         self._yahoo_auth.login(username, password, YAHOO_FANTASY_URL + "/nba/" + str(league_id))
         team_rosters = self._yahoo_nba_fantasy.get_active_rosters(league_id)
-
 
         self._generate_games_per_week(weekly_games_per_team, team_rosters)
 
