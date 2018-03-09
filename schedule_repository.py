@@ -9,7 +9,7 @@ class ScheduleRepository(object):
     def get_weekly_game_count_per_team(self, weeks):
         weeks = map(str, weeks if isinstance(weeks, list) else [weeks])
         schedule = self._load_data()
-        return { week : schedule[str(week)] for week in weeks if week in schedule }
+        return { week : schedule[week] for week in weeks if week in schedule }
     
 
     def _load_data(self):
