@@ -1,28 +1,22 @@
-from selenium import webdriver
-import getpass
-import json
 import os
+import sys
+import json
 
 from schedule_repository import ScheduleRepository
-from yahoo_auth import YahooAuth
 from roster_repository import RosterRepository
 from config import headless_chrome_options, YAHOO_FANTASY_URL
 from utils.timer import timer
 
 class WeeklyTeamGamesCounter(object):
     def __init__(self):
-        self._driver = webdriver.Chrome(chrome_options=headless_chrome_options)
         self._schedule = ScheduleRepository()
-        self._yahoo_auth = YahooAuth(self._driver)
-        self._yahoo_nba_fantasy = RosterRepository(self._driver)
+        self._yahoo_nba_fantasy = RosterRepository()
     
 
     @timer
-    def main(self, username, password, league_id, weeks):
+    def main(self, league_id, weeks):
         weekly_games_per_team = self._schedule.get_weekly_game_count_per_team(weeks)
-        self._yahoo_auth.login(username, password, YAHOO_FANTASY_URL + "/nba/" + str(league_id))
         team_rosters = self._yahoo_nba_fantasy.get_active_rosters(league_id)
-
         self._generate_games_per_week(weekly_games_per_team, team_rosters)
 
 
@@ -72,7 +66,5 @@ class WeeklyTeamGamesCounter(object):
 
 
 if __name__ == "__main__":
-    username = input("Enter Yahoo username/email: ")
-    password = getpass.getpass(prompt="Enter Yahoo password: ")
     games_counter = WeeklyTeamGamesCounter()
-    games_counter.main(username, password, 10156, [22, 23, 24])
+    games_counter.main(10156, [22, 23, 24])

@@ -1,13 +1,14 @@
+import re
+import sys
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from bs4 import BeautifulSoup
-import re
-import sys
 
-from config import YAHOO_FANTASY_URL
-
+from config import headless_chrome_options, YAHOO_FANTASY_URL, YAHOO_NBA_FANTASY_URL
+from yahoo_auth import YahooAuth
 
 TEAM_NAME_CLASS = "Mawpx-250"
 WIN_LOSS_DRAW_CLASS = "Tst-wlt"
@@ -16,10 +17,11 @@ PLAYER_NAME_CLASS = "ysf-player-name"
 
 
 class RosterRepository(object):
-    def __init__(self, driver):
-        self._driver = driver
+    def __init__(self):
+        self._driver = webdriver.Chrome(chrome_options=headless_chrome_options)
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)
 
+    @YahooAuth.ensures_login(YAHOO_NBA_FANTASY_URL)
     def get_active_rosters(self, league_id):
         self._assert_current_page_matches_league()
         teams_info = self._get_teams_info()
@@ -111,6 +113,6 @@ class RosterRepository(object):
 
 
     def _assert_current_page_matches_league(self):
-        if not re.search(YAHOO_FANTASY_URL + '/nba/\d+.*?$', self._driver.current_url):
+        if not re.search(YAHOO_NBA_FANTASY_URL + '\d+.*?$', self._driver.current_url):
             print("Current page is not a league page. Exiting.")
             sys.exit()

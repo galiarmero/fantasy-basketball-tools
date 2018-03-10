@@ -1,3 +1,5 @@
+import functools
+from urllib.parse import urljoin
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
@@ -6,24 +8,31 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 class YahooAuth(object):
     def __init__(self, driver):
         self._driver = driver
-        self._wait = WebDriverWait(self._driver, 10)
+        self._wait = WebDriverWait(self._driver, 90)
 
-    def login(self, username, password, target_url="https://www.yahoo.com"):
-        try:
-            self._target_url = target_url
-            self._go_to_sign_in()
-            self._enter_username(username)
-            self._enter_password(password)
-            
-        except TimeoutException:
-            print("Page redirected to is different from expected.")
-            exit(1)
-    
+    @classmethod
+    def ensures_login(this, target_url):
+        def login_then_execute(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                driver = args[0]._driver
+                self = this(driver)
+                full_target_url = urljoin(target_url, str(args[1]))
 
-    def _go_to_sign_in(self):
-        self._driver.get(self._target_url)
-        self._wait.until(expect.url_contains("/config/login"))
-        print("Attempting login.")
+                try:
+                    self._login(full_target_url)
+                    print("Login successful")
+                except TimeoutException:
+                    print("Failed to login within 90 secs\nClosing browser")
+                return func(*args, **kwargs)
+            return wrapper
+        return login_then_execute
+
+
+    def _login(self, target_url="https://www.yahoo.com"):
+        print("Attempting login")
+        self._driver.get(target_url)
+        self._wait.until(expect.url_contains(target_url))
 
     
     def _enter_username(self, username):
@@ -80,4 +89,6 @@ class YahooAuth(object):
     
 
     def _url_starts_with_target(self, driver):
-        return driver.current_url and driver.current_url.startswith(self._target_url)
+        # TODO: Get a hold of target_url somehow
+        target_url = "there's a TODO here"
+        return driver.current_url and driver.current_url.startswith(target_url)
