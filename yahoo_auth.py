@@ -1,4 +1,5 @@
 import functools
+import sys
 from urllib.parse import urljoin
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -8,28 +9,31 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 class YahooAuth(object):
     def __init__(self, driver):
         self._driver = driver
-        self._wait = WebDriverWait(self._driver, 90)
+        self._wait = WebDriverWait(self._driver, 180)
 
     @classmethod
-    def ensures_login(this, target_url):
+    def ensures_login(this, target_url="https://www.yahoo.com"):
         def login_then_execute(func):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 driver = args[0]._driver
                 self = this(driver)
-                full_target_url = urljoin(target_url, str(args[1]))
-
+                full_target_url = urljoin(target_url, '/'.join([ str(a) for a in args[1:] ]) )
+                print(full_target_url)
                 try:
                     self._login(full_target_url)
                     print("Login successful")
                 except TimeoutException:
                     print("Failed to login within 90 secs\nClosing browser")
+                    driver.close()
+                    sys.exit()
+                
                 return func(*args, **kwargs)
             return wrapper
         return login_then_execute
 
 
-    def _login(self, target_url="https://www.yahoo.com"):
+    def _login(self, target_url):
         print("Attempting login")
         self._driver.get(target_url)
         self._wait.until(expect.url_contains(target_url))
