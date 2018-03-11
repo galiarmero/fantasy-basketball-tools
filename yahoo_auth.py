@@ -1,15 +1,17 @@
-import functools
 import sys
+import pickle
+import functools
 from urllib.parse import urljoin
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 class YahooAuth(object):
     def __init__(self, driver):
         self._driver = driver
-        self._wait = WebDriverWait(self._driver, 180)
+        self._wait_login = WebDriverWait(self._driver, 180)
+        self._wait = WebDriverWait(self._driver, 10)
 
     @classmethod
     def ensures_login(this, target_url="https://www.yahoo.com"):
@@ -36,7 +38,23 @@ class YahooAuth(object):
     def _login(self, target_url):
         print("Attempting login")
         self._driver.get(target_url)
+        try:
+            self._load_cookies(target_url)
+        except (FileNotFoundError, WebDriverException, TimeoutException):
+            print("Please manually type your credentials")
+            self._wait_login.until(expect.url_contains(target_url))
+            self._dump_cookies(target_url)
+
+    def _load_cookies(self, target_url):
+        cookies = pickle.load(open('cookies.pkl', 'rb'))
+        for cookie in cookies:
+            self._driver.add_cookie(cookie)
+        
+        self._driver.get(target_url)
         self._wait.until(expect.url_contains(target_url))
+
+    def _dump_cookies(self, target_url):
+        pickle.dump(self._driver.get_cookies(), open("cookies.pkl", "wb"))
 
     
     def _enter_username(self, username):
