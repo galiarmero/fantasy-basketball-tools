@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from bs4 import BeautifulSoup
 
-from config import headless_chrome_options, YAHOO_FANTASY_URL, YAHOO_NBA_FANTASY_URL
+from config import chrome_options, headless_chrome_options, YAHOO_FANTASY_URL, YAHOO_NBA_FANTASY_URL
 from yahoo_auth import YahooAuth
 
 TEAM_NAME_CLASS = "Mawpx-250"
@@ -17,8 +17,13 @@ PLAYER_NAME_CLASS = "ysf-player-name"
 
 
 class RosterRepository(object):
-    def __init__(self):
-        self._driver = webdriver.Chrome(chrome_options=headless_chrome_options)
+    def __init__(self, **kwargs):
+        try:
+            self._headless = kwargs['headless']
+        except KeyError:
+            self._headless = False
+        
+        self._driver = webdriver.Chrome(chrome_options=self._pick_driver_options())
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)
 
     @YahooAuth.ensures_login(YAHOO_NBA_FANTASY_URL)
@@ -110,6 +115,10 @@ class RosterRepository(object):
             })
 
         return teams_info
+
+
+    def _pick_driver_options(self):
+        return headless_chrome_options if self._headless else chrome_options
 
 
     def _assert_current_page_matches_league(self):

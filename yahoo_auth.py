@@ -8,8 +8,9 @@ from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 class YahooAuth(object):
-    def __init__(self, driver):
+    def __init__(self, driver, headless):
         self._driver = driver
+        self._headless = headless
         self._wait_login = WebDriverWait(self._driver, 180)
         self._wait = WebDriverWait(self._driver, 10)
 
@@ -19,9 +20,10 @@ class YahooAuth(object):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 driver = args[0]._driver
-                self = this(driver)
+                headless = args[0]._headless
+                self = this(driver, headless)
+
                 full_target_url = urljoin(target_url, '/'.join([ str(a) for a in args[1:] ]) )
-                print(full_target_url)
                 try:
                     self._login(full_target_url)
                     print("Login successful")
@@ -42,6 +44,10 @@ class YahooAuth(object):
             self._load_cookies(target_url)
         except (FileNotFoundError, WebDriverException, TimeoutException):
             print("Please manually type your credentials")
+
+            if self._headless:
+                self._login_headless(target_url)
+
             self._wait_login.until(expect.url_contains(target_url))
             self._dump_cookies(target_url)
 
@@ -55,6 +61,10 @@ class YahooAuth(object):
 
     def _dump_cookies(self, target_url):
         pickle.dump(self._driver.get_cookies(), open("cookies.pkl", "wb"))
+
+    
+    def _login_headless(self, target_url):
+        pass
 
     
     def _enter_username(self, username):
@@ -78,10 +88,10 @@ class YahooAuth(object):
                 self._driver.find_element_by_xpath(
                     "//p[@id='username-error' and @data-error='messages.ERROR_INVALID_USERNAME']")
                 print("Username is not recognized. Exiting.")
-                exit(1)
+                sys.exit(1)
             except NoSuchElementException:
                 print("An error occurred after entering username.")
-                exit(1)
+                sys.exit(1)
 
 
     def _enter_password(self, password):

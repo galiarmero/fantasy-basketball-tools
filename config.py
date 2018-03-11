@@ -1,9 +1,11 @@
 from selenium.webdriver.chrome.options import Options
 import os
 
+chrome_options = Options()
+
 headless_chrome_options = Options()
-# headless_chrome_options.add_argument("--headless")
-# headless_chrome_options.add_argument("--disable-gpu")
+headless_chrome_options.add_argument("--headless")
+headless_chrome_options.add_argument("--disable-gpu")
 
 
 YAHOO_FANTASY_URL = "https://basketball.fantasysports.yahoo.com"

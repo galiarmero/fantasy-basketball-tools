@@ -8,15 +8,15 @@ from config import headless_chrome_options, YAHOO_FANTASY_URL
 from utils.timer import timer
 
 class WeeklyTeamGamesCounter(object):
-    def __init__(self):
-        self._schedule = ScheduleRepository()
-        self._yahoo_nba_fantasy = RosterRepository()
+    def __init__(self, **kwargs):
+        self._sched_repo = ScheduleRepository()
+        self._roster_repo = RosterRepository(**kwargs)
     
 
     @timer
-    def main(self, league_id, weeks):
-        weekly_games_per_team = self._schedule.get_weekly_game_count_per_team(weeks)
-        team_rosters = self._yahoo_nba_fantasy.get_active_rosters(league_id)
+    def main(self, league_id, weeks, **kwargs):
+        weekly_games_per_team = self._sched_repo.get_weekly_game_count_per_team(weeks)
+        team_rosters = self._roster_repo.get_active_rosters(league_id, **kwargs)
         self._generate_games_per_week(weekly_games_per_team, team_rosters)
 
 
@@ -61,10 +61,8 @@ class WeeklyTeamGamesCounter(object):
             except KeyError:
                 print("\t{} not found".format(player["team"]))
         return team_games_this_week
-        
-
 
 
 if __name__ == "__main__":
-    games_counter = WeeklyTeamGamesCounter()
-    games_counter.main(10156, [22, 23, 24])
+    games_counter = WeeklyTeamGamesCounter(headless=True)
+    games_counter.main(50972, [22, 23, 24])
