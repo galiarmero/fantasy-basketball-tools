@@ -1,6 +1,7 @@
 import sys
 import pickle
 import functools
+from getpass import getpass
 from urllib.parse import urljoin
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -8,9 +9,8 @@ from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 class YahooAuth(object):
-    def __init__(self, driver, headless):
+    def __init__(self, driver):
         self._driver = driver
-        self._headless = headless
         self._wait_login = WebDriverWait(self._driver, 180)
         self._wait = WebDriverWait(self._driver, 10)
 
@@ -20,8 +20,7 @@ class YahooAuth(object):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 driver = args[0]._driver
-                headless = args[0]._headless
-                self = this(driver, headless)
+                self = this(driver)
 
                 full_target_url = urljoin(target_url, '/'.join([ str(a) for a in args[1:] ]) )
                 try:
@@ -44,10 +43,6 @@ class YahooAuth(object):
             self._load_cookies(target_url)
         except (FileNotFoundError, WebDriverException, TimeoutException):
             print("Please manually type your credentials")
-
-            if self._headless:
-                self._login_headless(target_url)
-
             self._wait_login.until(expect.url_contains(target_url))
             self._dump_cookies(target_url)
 
@@ -61,66 +56,3 @@ class YahooAuth(object):
 
     def _dump_cookies(self, target_url):
         pickle.dump(self._driver.get_cookies(), open("cookies.pkl", "wb"))
-
-    
-    def _login_headless(self, target_url):
-        pass
-
-    
-    def _enter_username(self, username):
-        username_input = self._wait.until(
-            expect.presence_of_element_located(
-                (By.ID, "login-username"))
-        )
-        username_input.send_keys(username)
-
-        next_button = self._wait.until(
-            expect.element_to_be_clickable(
-                (By.ID, "login-signin"))
-        )
-        next_button.click()
-
-        try:
-            self._wait.until(expect.url_contains("/account/challenge/password"))
-            print("Username is recognized.")
-        except TimeoutException:
-            try:
-                self._driver.find_element_by_xpath(
-                    "//p[@id='username-error' and @data-error='messages.ERROR_INVALID_USERNAME']")
-                print("Username is not recognized. Exiting.")
-                sys.exit(1)
-            except NoSuchElementException:
-                print("An error occurred after entering username.")
-                sys.exit(1)
-
-
-    def _enter_password(self, password):
-        password_input = self._wait.until(
-            expect.presence_of_element_located(
-                (By.ID, "login-passwd"))
-        )
-        password_input.send_keys(password)
-
-        sign_in_button = self._wait.until(
-            expect.element_to_be_clickable(
-                (By.ID, "login-signin"))
-        )
-        sign_in_button.click()
-
-        try:
-            self._wait.until(self._url_starts_with_target)
-            print("Login successful.")
-        except TimeoutException:
-            try:
-                self._driver.find_element_by_xpath(
-                    "//p[contains(concat(' ', @class, ' '), ' error-msg ') and @data-error='messages.ERROR_INVALID_PASSWORD']")
-                print("Password is invalid. Exiting.")
-                exit(1)
-            except NoSuchElementException:
-                print("An error occurred after entering password.")
-    
-
-    def _url_starts_with_target(self, driver):
-        # TODO: Get a hold of target_url somehow
-        target_url = "there's a TODO here"
-        return driver.current_url and driver.current_url.startswith(target_url)

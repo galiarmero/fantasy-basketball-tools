@@ -4,19 +4,19 @@ import json
 
 from schedule_repository import ScheduleRepository
 from roster_repository import RosterRepository
-from config import headless_chrome_options, YAHOO_FANTASY_URL
+from config import YAHOO_FANTASY_URL
 from utils.timer import timer
 
 class WeeklyTeamGamesCounter(object):
-    def __init__(self, **kwargs):
+    def __init__(self):
         self._sched_repo = ScheduleRepository()
-        self._roster_repo = RosterRepository(**kwargs)
+        self._roster_repo = RosterRepository()
     
 
     @timer
-    def main(self, league_id, weeks, **kwargs):
+    def main(self, league_id, weeks):
         weekly_games_per_team = self._sched_repo.get_weekly_game_count_per_team(weeks)
-        team_rosters = self._roster_repo.get_active_rosters(league_id, **kwargs)
+        team_rosters = self._roster_repo.get_active_rosters(league_id)
         self._generate_games_per_week(weekly_games_per_team, team_rosters)
 
 
@@ -35,6 +35,7 @@ class WeeklyTeamGamesCounter(object):
         with open('weekly_team_games.json', 'w') as outfile:
             json.dump(weekly_games_per_team, outfile)
 
+
     def _generate_team_games_for_week(self, team, player_count_per_nba_team, games_per_nba_team):
         team_games_this_week = 0
 
@@ -44,6 +45,7 @@ class WeeklyTeamGamesCounter(object):
             for nba_team, player_count in player_count_per_nba_team[team["name"]].items():
                 team_games_this_week = team_games_this_week + (games_per_nba_team[nba_team] * player_count)
         return team_games_this_week
+
 
     def _count_team_games_and_update_player_count(self, player_count_per_nba_team, team, team_games_this_week, games_per_nba_team):
         player_count_per_nba_team[team["name"]] = {}
@@ -64,5 +66,5 @@ class WeeklyTeamGamesCounter(object):
 
 
 if __name__ == "__main__":
-    games_counter = WeeklyTeamGamesCounter(headless=True)
+    games_counter = WeeklyTeamGamesCounter()
     games_counter.main(50972, [22, 23, 24])
