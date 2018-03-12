@@ -3,3 +3,4 @@ __pycache__
 drivers
 pyenv
 *.pyc
+cookies.pkl

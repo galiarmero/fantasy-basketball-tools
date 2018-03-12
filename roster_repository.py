@@ -1,13 +1,15 @@
+import re
+import sys
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as expect
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from bs4 import BeautifulSoup
-import re
-import sys
 
-from config import YAHOO_FANTASY_URL
-
+from config import YAHOO_FANTASY_URL, YAHOO_NBA_FANTASY_URL
+from yahoo_auth import YahooAuth
 
 TEAM_NAME_CLASS = "Mawpx-250"
 WIN_LOSS_DRAW_CLASS = "Tst-wlt"
@@ -16,10 +18,11 @@ PLAYER_NAME_CLASS = "ysf-player-name"
 
 
 class RosterRepository(object):
-    def __init__(self, driver):
-        self._driver = driver
+    def __init__(self):
+        self._driver = webdriver.Chrome(chrome_options=Options())
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)
 
+    @YahooAuth.ensures_login(YAHOO_NBA_FANTASY_URL)
     def get_active_rosters(self, league_id):
         self._assert_current_page_matches_league()
         teams_info = self._get_teams_info()
@@ -41,6 +44,7 @@ class RosterRepository(object):
 
         return teams_info
 
+
     def _get_roster(self, active=False):
         stats_table = self._driver.find_element_by_id('statTable0').get_attribute('innerHTML')
         stats_soup = BeautifulSoup(stats_table, 'html.parser')
@@ -59,6 +63,7 @@ class RosterRepository(object):
                 roster.append(player)
 
         return roster
+
 
     def _get_player_info(self, player_row):
         player_info_element = player_row.find(class_=PLAYER_NAME_CLASS)
@@ -79,7 +84,7 @@ class RosterRepository(object):
 
 
     def _get_teams_info(self):
-        standings = self._driver.find_element_by_id("standingstable").get_attribute('innerHTML')
+        standings = self._get_standings()
         standings_soup = BeautifulSoup(standings, 'html.parser')
         team_rows = standings_soup.find('tbody').find_all('tr')
         
@@ -109,8 +114,27 @@ class RosterRepository(object):
 
         return teams_info
 
+    
+    def _get_standings(self):
+        try:
+            standings_nav = self._wait.until(
+                expect.element_to_be_clickable(
+                    (By.XPATH, "//div[@id='leaguestandingstabs']/ul/li/a[@data-target='#lhststandtab']"))
+            )
+            standings_nav.click()
+
+            standings_table = self._wait.until(
+                expect.visibility_of_element_located(
+                    (By.ID, "standingstable")
+                )
+            )
+            return standings_table.get_attribute('innerHTML')
+        except TimeoutException:
+            print("Unable to find standings menu")
+            sys.exit(1)
+
 
     def _assert_current_page_matches_league(self):
-        if not re.search(YAHOO_FANTASY_URL + '/nba/\d+.*?$', self._driver.current_url):
+        if not re.search(YAHOO_NBA_FANTASY_URL + '\d+.*?$', self._driver.current_url):
             print("Current page is not a league page. Exiting.")
             sys.exit()

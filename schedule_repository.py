@@ -17,5 +17,6 @@ class ScheduleRepository(object):
             return json.load(datafile)
         return {}
     
+
     def _get_datafile_path(self):
         return os.path.join(DATA_DIR, SCHEDULE_DATA_DIR, '{}.json'.format(CURRENT_SEASON))
