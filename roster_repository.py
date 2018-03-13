@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 from config import YAHOO_FANTASY_URL, YAHOO_NBA_FANTASY_URL
 from yahoo_auth import YahooAuth
 
+LEAGUE_URL_FORMAT = YAHOO_NBA_FANTASY_URL + "{}"
+
 TEAM_NAME_CLASS = "Mawpx-250"
 WIN_LOSS_DRAW_CLASS = "Tst-wlt"
 POS_LABEL_CLASS = "pos-label"
@@ -22,7 +24,7 @@ class RosterRepository(object):
         self._driver = webdriver.Chrome(chrome_options=Options())
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)
 
-    @YahooAuth.ensures_login(YAHOO_NBA_FANTASY_URL)
+    @YahooAuth.ensures_login(LEAGUE_URL_FORMAT)
     def get_active_rosters(self, league_id):
         self._assert_current_page_matches_league()
         teams_info = self._get_teams_info()

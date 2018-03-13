@@ -22,7 +22,7 @@ class YahooAuth(object):
                 driver = args[0]._driver
                 self = this(driver)
 
-                full_target_url = urljoin(target_url, '/'.join([ str(a) for a in args[1:] ]) )
+                full_target_url = target_url.format(*tuple(args[1:]))
                 try:
                     self._login(full_target_url)
                     print("Login successful")
