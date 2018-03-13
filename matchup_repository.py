@@ -1,5 +1,7 @@
 import re
+import os
 import sys
+import json
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from selenium import webdriver
@@ -7,20 +9,37 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-from config import YAHOO_NBA_FANTASY_URL
+from config import YAHOO_NBA_FANTASY_URL, CURRENT_SEASON, DATA_DIR
 from yahoo_auth import YahooAuth
 
 LEAGUE_URL_FORMAT = YAHOO_NBA_FANTASY_URL + "{}"
+MATCHUP_DIR = "matchups"
 
 
 class MatchupRepository(object):
     def __init__(self):
         self._driver = webdriver.Chrome(chrome_options=Options())
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)
+
+    
+    def get_results_for_week(self, league_id, week_number):
+        datafile_path = self._get_datafile_path(league_id, week_number)
+        try:
+            with open(datafile_path) as datafile:
+                return json.load(datafile)
+        except FileNotFoundError:
+            print("No data saved for Week {} yet. Fetching from source.".format(week_number))
+            results = self._fetch_results_for_week(league_id, week_number)
+
+            if not os.path.exists(datafile_path):
+                os.makedirs(os.path.dirname(datafile_path), mode=0o777, exist_ok=True)
+            with open(datafile_path, 'w') as outfile:
+                json.dump(results, outfile)
+            return results
     
 
     @YahooAuth.ensures_login(LEAGUE_URL_FORMAT)
-    def get_results_for_week(self, league_id, week_number):
+    def _fetch_results_for_week(self, league_id, week_number):
         self._go_to_week(week_number)
         matchup_links = self._get_matchup_links()
         stats_meta = {}
@@ -133,3 +152,7 @@ class MatchupRepository(object):
                                     .get_attribute('innerHTML')
         soup = BeautifulSoup(matchup_nav, 'html.parser')
         return soup.find_all('option')
+    
+
+    def _get_datafile_path(self, league_id, week_number):
+        return os.path.join(DATA_DIR, MATCHUP_DIR, str(league_id), '{}.json'.format(week_number))
