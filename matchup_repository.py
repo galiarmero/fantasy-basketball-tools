@@ -20,13 +20,16 @@ class MatchupRepository(object):
     
 
     @YahooAuth.ensures_login(LEAGUE_URL_FORMAT)
-    def get_matchups_for_week(self, league_id, week_number):
+    def get_results_for_week(self, league_id, week_number):
         self._go_to_week(week_number)
         matchup_links = self._get_matchup_links()
         stats_meta = {}
+        team_results = []
 
         for matchup_link in matchup_links:
-            self._get_matchup_results(matchup_link, stats_meta)
+            team_results.extend(self._get_matchup_results(matchup_link, stats_meta))
+
+        return team_results
 
     
     def _get_matchup_results(self, matchup_link, stats_meta):
@@ -37,23 +40,44 @@ class MatchupRepository(object):
 
         matchup_body = self._driver.find_element_by_xpath("//section[@id='matchup-wall-header']/table/tbody") \
                                     .get_attribute('innerHTML')
-        teams = BeautifulSoup(matchup_body, 'html.parser').find_all('tr')
-        for team in teams:
+        opposing_teams = BeautifulSoup(matchup_body, 'html.parser').find_all('tr')
+        return self._generate_matchup_results(opposing_teams, stats_meta)
+
+    
+    def _generate_matchup_results(self, opposing_teams, stats_meta):
+        matchup_results = []
+        for team in opposing_teams:
             id = int(team.select('td:nth-of-type(1) > div > div > a')[0]['href'].split('/')[-1])
-            cols = team.select('td > div')
-            result_cols = [ col.text.strip() for col in cols ]
-            team_info, stats = self._generate_team_result(id, result_cols, stats_meta['stats'])
-            print(team_info)
-            print(stats)
+            score_list = self._get_score_list(team)
+            matchup_results.append(self._generate_team_result(id, score_list, stats_meta['stats']))
+        return matchup_results
+
+    
+    def _get_score_list(self, team):
+        cols = team.select('td > div')
+        score_list = []
+        for col in cols:
+            value = col.text.strip()
+            try:
+                if '.' in value:
+                    value = float(value)
+                else:
+                    value = int(value)
+            except ValueError:
+                pass
+            
+            score_list.append(value)
+        return score_list
 
     
     def _generate_team_result(self, id, result_list, stats_list):
-        team_info = {}
-        team_info['team'] = result_list[0]
-        team_info['h2h_score'] = result_list[-1]
+        team_result = {}
+        team_result['team'] = result_list[0]
+        team_result['h2h_score'] = result_list[-1]
+        team_result['stats'] = dict(zip( [ stat['key'] for stat in stats_list ], \
+                                        result_list[1:-1] ))
 
-        return { id: team_info }, { id: dict(zip( [ stat['key'] for stat in stats_list ], \
-                                                        result_list[1:-1] )) }
+        return { id: team_result }
 
     
     def _get_stats_meta(self, stats_meta):

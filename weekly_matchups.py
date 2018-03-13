@@ -1,3 +1,4 @@
+import os
 
 from matchup_repository import MatchupRepository
 
@@ -7,7 +8,7 @@ class WeeklyMatchups(object):
 
 
     def show_h2h_results(self, league, week):
-        self._matchups_repo.get_matchups_for_week(league, week)    
+        print(self._matchups_repo.get_results_for_week(league, week))
 
 
 if __name__ == "__main__":
