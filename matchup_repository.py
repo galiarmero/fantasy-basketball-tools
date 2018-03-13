@@ -1,5 +1,7 @@
 import re
+import os
 import sys
+import json
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from selenium import webdriver
@@ -7,26 +9,46 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-from config import YAHOO_NBA_FANTASY_URL
+from config import YAHOO_NBA_FANTASY_URL, CURRENT_SEASON, DATA_DIR
 from yahoo_auth import YahooAuth
 
 LEAGUE_URL_FORMAT = YAHOO_NBA_FANTASY_URL + "{}"
+MATCHUP_DIR = "matchups"
 
 
 class MatchupRepository(object):
     def __init__(self):
         self._driver = webdriver.Chrome(chrome_options=Options())
         self._wait = WebDriverWait(self._driver, 10, poll_frequency=0.25)
+
+    
+    def get_results_for_week(self, league_id, week_number):
+        datafile_path = self._get_datafile_path(league_id, week_number)
+        try:
+            with open(datafile_path) as datafile:
+                return json.load(datafile)
+        except FileNotFoundError:
+            print("No data saved for Week {} yet. Fetching from source.".format(week_number))
+            results = self._fetch_results_for_week(league_id, week_number)
+
+            if not os.path.exists(datafile_path):
+                os.makedirs(os.path.dirname(datafile_path), mode=0o777, exist_ok=True)
+            with open(datafile_path, 'w') as outfile:
+                json.dump(results, outfile)
+            return results
     
 
     @YahooAuth.ensures_login(LEAGUE_URL_FORMAT)
-    def get_matchups_for_week(self, league_id, week_number):
+    def _fetch_results_for_week(self, league_id, week_number):
         self._go_to_week(week_number)
         matchup_links = self._get_matchup_links()
         stats_meta = {}
+        team_results = []
 
         for matchup_link in matchup_links:
-            self._get_matchup_results(matchup_link, stats_meta)
+            team_results.extend(self._get_matchup_results(matchup_link, stats_meta))
+
+        return team_results
 
     
     def _get_matchup_results(self, matchup_link, stats_meta):
@@ -37,23 +59,44 @@ class MatchupRepository(object):
 
         matchup_body = self._driver.find_element_by_xpath("//section[@id='matchup-wall-header']/table/tbody") \
                                     .get_attribute('innerHTML')
-        teams = BeautifulSoup(matchup_body, 'html.parser').find_all('tr')
-        for team in teams:
+        opposing_teams = BeautifulSoup(matchup_body, 'html.parser').find_all('tr')
+        return self._generate_matchup_results(opposing_teams, stats_meta)
+
+    
+    def _generate_matchup_results(self, opposing_teams, stats_meta):
+        matchup_results = []
+        for team in opposing_teams:
             id = int(team.select('td:nth-of-type(1) > div > div > a')[0]['href'].split('/')[-1])
-            cols = team.select('td > div')
-            result_cols = [ col.text.strip() for col in cols ]
-            team_info, stats = self._generate_team_result(id, result_cols, stats_meta['stats'])
-            print(team_info)
-            print(stats)
+            score_list = self._get_score_list(team)
+            matchup_results.append(self._generate_team_result(id, score_list, stats_meta['stats']))
+        return matchup_results
+
+    
+    def _get_score_list(self, team):
+        cols = team.select('td > div')
+        score_list = []
+        for col in cols:
+            value = col.text.strip()
+            try:
+                if '.' in value:
+                    value = float(value)
+                else:
+                    value = int(value)
+            except ValueError:
+                pass
+            
+            score_list.append(value)
+        return score_list
 
     
     def _generate_team_result(self, id, result_list, stats_list):
-        team_info = {}
-        team_info['team'] = result_list[0]
-        team_info['h2h_score'] = result_list[-1]
+        team_result = {}
+        team_result['team'] = result_list[0]
+        team_result['h2h_score'] = result_list[-1]
+        team_result['stats'] = dict(zip( [ stat['key'] for stat in stats_list ], \
+                                        result_list[1:-1] ))
 
-        return { id: team_info }, { id: dict(zip( [ stat['key'] for stat in stats_list ], \
-                                                        result_list[1:-1] )) }
+        return { id: team_result }
 
     
     def _get_stats_meta(self, stats_meta):
@@ -109,3 +152,7 @@ class MatchupRepository(object):
                                     .get_attribute('innerHTML')
         soup = BeautifulSoup(matchup_nav, 'html.parser')
         return soup.find_all('option')
+    
+
+    def _get_datafile_path(self, league_id, week_number):
+        return os.path.join(DATA_DIR, MATCHUP_DIR, str(league_id), '{}.json'.format(week_number))
